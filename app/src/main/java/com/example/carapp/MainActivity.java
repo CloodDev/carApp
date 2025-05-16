@@ -6,125 +6,130 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.ArrayList;
+import java.util.List;
+
+public class CarGalleryActivity extends AppCompatActivity {
+
+    // Car model class
+    private static class Car {
+        int id;
+        int src;
+        String alt;
+        String color;
+        int year;
+        int price;
+
+        public Car(int id, int src, String alt, String color, int year, int price) {
+            this.id = id;
+            this.src = src;
+            this.alt = alt;
+            this.color = color;
+            this.year = year;
+            this.price = price;
+        }
+    }
+
+    // List of cars
+    private List<Car> cars = new ArrayList<>();
+    private List<Car> filteredCars = new ArrayList<>();
+    private GridLayout gallery;
     
-    // Car image resources
-    // Car image resources grouped by brand
-    private final int[] hondaImages = {
-        R.drawable.honda_biala, 
-        R.drawable.honda_czarna, 
-        R.drawable.honda_czerwona,
-    };
-    
-    private final int[] bmwImages = {
-        R.drawable.bmw_biale,
-        R.drawable.bmw_czarne,
-        R.drawable.bmw_czerwone,
-        R.drawable.bmw_silver,
-    };
-    
-    private final int[] toyotaImages = {
-        R.drawable.toyota_czarna, 
-        R.drawable.toyota_czerwona, 
-    };
-    
-    // Default images to show initially
-    private int[] carImages = bmwImages;
-    
-    private ImageView mainCarImageView;
-    private ImageView[] thumbnailViews;
-    private Spinner brandSpinner, colorSpinner;
-    private SeekBar yearSeekBar;
+    // Filters
+    private Spinner colorSpinner;
+    private SeekBar yearFromSeekBar, yearToSeekBar;
     private TextView yearRangeTextView;
-    private EditText yearFromEditText, yearToEditText, priceFromEditText, priceToEditText;
-    private Button searchButton;
+    private EditText priceFromEditText, priceToEditText;
     
-    private final int MIN_YEAR = 1990;
-    private final int MAX_YEAR = 2023;
-    private int currentYear = 2010;
+    private int yearFrom = 2000;
+    private int yearTo = 2024;
+    private int priceFrom = 0;
+    private int priceTo = 500;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        setContentView(R.layout.activity_car_gallery);
         
+        initCarData();
         initViews();
-        setupSpinners();
-        setupYearSeekBar();
-        setupCarImages();
-        setupSearchButton();
+        setupFilters();
+        filterCars();
+        updateGallery();
     }
-    
+
+    private void initCarData() {
+        // Initialize car data
+        cars.add(new Car(1, R.drawable.bmw_biale, "BMW Białe", "Biały", 2016, 200));
+        cars.add(new Car(2, R.drawable.bmw_czarne, "BMW Czarne", "Czarny", 2000, 250));
+        cars.add(new Car(3, R.drawable.bmw_czerwone, "BMW Czerwone", "Czerwony", 2010, 220));
+        cars.add(new Car(4, R.drawable.honda_biala, "Honda Biała", "Biały", 2018, 180));
+        cars.add(new Car(5, R.drawable.honda_czarna, "Honda Czarna", "Czarny", 2024, 230));
+        cars.add(new Car(6, R.drawable.honda_czerwona, "Honda Czerwona", "Czerwony", 2008, 210));
+        cars.add(new Car(7, R.drawable.toyota_czarna, "Toyota Czarna", "Czarny", 2018, 300));
+        cars.add(new Car(8, R.drawable.toyota_czerwona, "Toyota Czerwona", "Czerwony", 2002, 270));
+        cars.add(new Car(9, R.drawable.bmw_silver, "BMW Silver", "Srebrny", 2000, 320));
+    }
+
     private void initViews() {
-        mainCarImageView = findViewById(R.id.mainCarImageView);
-        // Get all potential thumbnail ImageViews
-        // Initialize array to hold thumbnail views
-        thumbnailViews = new ImageView[5]; // Max capacity for thumbnails
-        
-        // Dynamic thumbnail finding - will only be used if they exist
-        for (int i = 1; i <= 5; i++) {
-            int resId = getResources().getIdentifier(
-            "carImageView" + i, "id", getPackageName());
-            if (resId != 0) {
-            thumbnailViews[i-1] = findViewById(resId);
-            }
-        }
-        
-        brandSpinner = findViewById(R.id.brandSpinner);
+        // Initialize views
         colorSpinner = findViewById(R.id.colorSpinner);
-        yearSeekBar = findViewById(R.id.seekBar);
+        yearFromSeekBar = findViewById(R.id.yearFromSeekBar);
+        yearToSeekBar = findViewById(R.id.yearToSeekBar);
         yearRangeTextView = findViewById(R.id.yearRangeTextView);
-        yearFromEditText = findViewById(R.id.yearFromEditText);
-        yearToEditText = findViewById(R.id.yearToEditText);
         priceFromEditText = findViewById(R.id.priceFromEditText);
         priceToEditText = findViewById(R.id.priceToEditText);
-        searchButton = findViewById(R.id.searchButton);
+        gallery = findViewById(R.id.carGallery);
         
-        // Set initial values
-        yearFromEditText.setText(String.valueOf(MIN_YEAR));
-        yearToEditText.setText(String.valueOf(MAX_YEAR));
+        // Set initial text values
+        priceFromEditText.setText(String.valueOf(priceFrom));
+        priceToEditText.setText(String.valueOf(priceTo));
+        yearRangeTextView.setText(yearFrom + " - " + yearTo);
     }
     
-    private void setupSpinners() {
-        // Brand spinner
-        String[] brands = {"Wszystkie marki", "Honda", "BMW","Toyota"};
-        ArrayAdapter<String> brandAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, brands);
-        brandSpinner.setAdapter(brandAdapter);
-        
-        // Color spinner
-        String[] colors = {"Wszystkie kolory", "Czarny", "Biały", "Czerwony", "Niebieski", "Srebrny"};
+    private void setupFilters() {
+        // Setup Color Spinner
+        String[] colors = {"Wszystkie", "Biały", "Czarny", "Czerwony", "Srebrny"};
         ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, colors);
         colorSpinner.setAdapter(colorAdapter);
-    }
-    
-    private void setupYearSeekBar() {
-        yearSeekBar.setMax(MAX_YEAR - MIN_YEAR);
-        yearSeekBar.setProgress(currentYear - MIN_YEAR);
         
-        yearSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        // Filter when color is selected
+        colorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                filterCars();
+                updateGallery();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+        
+        // Setup Year SeekBars
+        yearFromSeekBar.setMax(24); // 2000-2024
+        yearToSeekBar.setMax(24);  // 2000-2024
+        yearToSeekBar.setProgress(24); // Set to 2024
+        
+        yearFromSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                currentYear = MIN_YEAR + progress;
-                yearRangeTextView.setText(MIN_YEAR + " - " + currentYear);
-                yearToEditText.setText(String.valueOf(currentYear));
+                yearFrom = 2000 + progress;
+                if (yearFrom > yearTo) {
+                    yearTo = yearFrom;
+                    yearToSeekBar.setProgress(progress);
+                }
+                yearRangeTextView.setText(yearFrom + " - " + yearTo);
+                filterCars();
+                updateGallery();
             }
             
             @Override
@@ -133,131 +138,65 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
-    }
-    
-    private void setupCarImages() {
-        updateCarImagesDisplay();
-    }
-    
-    private void updateCarImagesDisplay() {
-        // Load initial main image
-        if (carImages.length > 0) {
-            mainCarImageView.setImageResource(carImages[0]);
-        }
         
-        // Set up thumbnail images and click listeners
-        for (int i = 0; i < thumbnailViews.length; i++) {
-            if (thumbnailViews[i] != null) {
-                if (i < carImages.length) {
-                    final int index = i;
-                    thumbnailViews[i].setImageResource(carImages[i]);
-                    thumbnailViews[i].setOnClickListener(v -> {
-                        mainCarImageView.setImageResource(carImages[index]);
-                    });
-                    thumbnailViews[i].setVisibility(View.VISIBLE);
-                } else {
-                    thumbnailViews[i].setVisibility(View.GONE);
+        yearToSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                yearTo = 2000 + progress;
+                if (yearTo < yearFrom) {
+                    yearFrom = yearTo;
+                    yearFromSeekBar.setProgress(progress);
                 }
-            }
-        }
-    }
-    
-    private void setupSearchButton() {
-        searchButton.setOnClickListener(v -> {
-            String brand = brandSpinner.getSelectedItem().toString();
-            String color = colorSpinner.getSelectedItem().toString();
-            
-            String yearFrom = yearFromEditText.getText().toString();
-            String yearTo = yearToEditText.getText().toString();
-            String priceFrom = priceFromEditText.getText().toString();
-            String priceTo = priceToEditText.getText().toString();
-            
-            StringBuilder searchParams = new StringBuilder();
-            searchParams.append("Wyszukiwanie:\n");
-            
-            // Update car images based on selected brand
-            if (brand.equals("Honda")) {
-            carImages = hondaImages;
-            } else if (brand.equals("BMW")) {
-            carImages = bmwImages;
-            } else if (brand.equals("Toyota")) {
-            carImages = toyotaImages;
+                yearRangeTextView.setText(yearFrom + " - " + yearTo);
+                filterCars();
+                updateGallery();
             }
             
-            // Filter images based on color if a specific color is selected
-            if (!color.equals("Wszystkie kolory")) {
-            // Create temporary list to hold filtered images
-            java.util.List<Integer> filteredImages = new java.util.ArrayList<>();
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
             
-            for (int imageRes : carImages) {
-                String imageName = getResources().getResourceEntryName(imageRes).toLowerCase();
-                
-                // Check if the image name contains the selected color (in Polish)
-                if ((color.equals("Czarny") && imageName.contains("czarn")) ||
-                (color.equals("Biały") && (imageName.contains("bial") || imageName.contains("white"))) ||
-                (color.equals("Czerwony") && imageName.contains("czerwon")) ||
-                (color.equals("Niebieski") && imageName.contains("niebieski")) ||
-                (color.equals("Srebrny") && (imageName.contains("silver") || imageName.contains("srebrn")))) {
-                filteredImages.add(imageRes);
-                }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+        
+        // Setup price filter
+        Button applyPriceButton = findViewById(R.id.applyPriceButton);
+        applyPriceButton.setOnClickListener(v -> {
+            try {
+                priceFrom = Integer.parseInt(priceFromEditText.getText().toString());
+                priceTo = Integer.parseInt(priceToEditText.getText().toString());
+                filterCars();
+                updateGallery();
+            } catch (NumberFormatException e) {
+                // Handle invalid input
             }
-            
-            // Convert filtered list back to array
-            if (!filteredImages.isEmpty()) {
-                int[] filteredArray = new int[filteredImages.size()];
-                for (int i = 0; i < filteredImages.size(); i++) {
-                filteredArray[i] = filteredImages.get(i);
-                }
-                carImages = filteredArray;
-            } else {
-                // No cars found - display a message
-                Toast.makeText(MainActivity.this, "Nie znaleziono samochodów o podanych kryteriach.", Toast.LENGTH_LONG).show();
-                // Hide all thumbnails
-                for (ImageView view : thumbnailViews) {
-                if (view != null) {
-                    view.setVisibility(View.GONE);
-                }
-                }
-                // Show "No cars found" in main image view
-                mainCarImageView.setImageResource(android.R.drawable.ic_menu_help);
-                return; // Exit early
-            }
-            }
-            
-            // Check if there are any cars to display at all
-            if (carImages.length == 0) {
-            Toast.makeText(MainActivity.this, "Nie znaleziono samochodów o podanych kryteriach.", Toast.LENGTH_LONG).show();
-            // Hide all thumbnails
-            for (ImageView view : thumbnailViews) {
-                if (view != null) {
-                view.setVisibility(View.GONE);
-                }
-            }
-            // Show "No cars found" in main image view
-            mainCarImageView.setImageResource(android.R.drawable.ic_menu_help);
-            return; // Exit early
-            }
-            
-            // Refresh images display using the new method
-            updateCarImagesDisplay();
-            
-            searchParams.append("Marka: ").append(brand).append("\n");
-            searchParams.append("Kolor: ").append(color).append("\n");
-            searchParams.append("Rok od: ").append(yearFrom).append("\n");
-            searchParams.append("Rok do: ").append(yearTo).append("\n");
-            
-            if (!priceFrom.isEmpty()) {
-            searchParams.append("Cena od: ").append(priceFrom).append(" PLN\n");
-            }
-            
-            if (!priceTo.isEmpty()) {
-            searchParams.append("Cena do: ").append(priceTo).append(" PLN");
-            }
-            
-            Toast.makeText(MainActivity.this, searchParams.toString(), Toast.LENGTH_LONG).show();
-            
-            // Here you would typically start a new activity or fragment to show search results
         });
     }
+    
+    private void filterCars() {
+        filteredCars.clear();
+        
+        String selectedColor = colorSpinner.getSelectedItem().toString();
+        
+        for (Car car : cars) {
+            if ((selectedColor.equals("Wszystkie") || car.color.equals(selectedColor)) &&
+                car.year >= yearFrom && car.year <= yearTo &&
+                car.price >= priceFrom && car.price <= priceTo) {
+                filteredCars.add(car);
+            }
+        }
+    }
+    
+    private void updateGallery() {
+        gallery.removeAllViews();
+        
+        for (Car car : filteredCars) {
+            ImageView imageView = new ImageView(this);
+            imageView.setLayoutParams(new LinearLayout.LayoutParams(300, 300));
+            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            imageView.setImageResource(car.src);
+            imageView.setContentDescription(car.alt);
+            gallery.addView(imageView);
+        }
+    }
 }
-
