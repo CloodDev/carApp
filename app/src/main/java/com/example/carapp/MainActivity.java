@@ -1,27 +1,25 @@
 package com.example.carapp;
 
 import android.os.Bundle;
-import android.view.View;
-import android.widget.AdapterView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.GridLayout;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.slider.RangeSlider;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CarGalleryActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
 
-    // Car model class
-    private static class Car {
+    public static class Car {
         int id;
         int src;
         String alt;
@@ -39,36 +37,35 @@ public class CarGalleryActivity extends AppCompatActivity {
         }
     }
 
-    // List of cars
-    private List<Car> cars = new ArrayList<>();
-    private List<Car> filteredCars = new ArrayList<>();
-    private GridLayout gallery;
-    
-    // Filters
+    private final List<Car> cars = new ArrayList<>();
+    private final List<Car> filteredCars = new ArrayList<>();
+
     private Spinner colorSpinner;
-    private SeekBar yearFromSeekBar, yearToSeekBar;
-    private TextView yearRangeTextView;
-    private EditText priceFromEditText, priceToEditText;
-    
+    private RangeSlider yearRangeSlider;
+    private TextView yearRangeText;
+    private EditText minPriceInput, maxPriceInput;
+    private TextView priceRangeText;
+    private RecyclerView carsRecyclerView;
+
     private int yearFrom = 2000;
     private int yearTo = 2024;
     private int priceFrom = 0;
     private int priceTo = 500;
 
+    private CarAdapter carAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_car_gallery);
-        
+        setContentView(R.layout.activity_main);
+
         initCarData();
         initViews();
         setupFilters();
         filterCars();
-        updateGallery();
     }
 
     private void initCarData() {
-        // Initialize car data
         cars.add(new Car(1, R.drawable.bmw_biale, "BMW Białe", "Biały", 2016, 200));
         cars.add(new Car(2, R.drawable.bmw_czarne, "BMW Czarne", "Czarny", 2000, 250));
         cars.add(new Car(3, R.drawable.bmw_czerwone, "BMW Czerwone", "Czerwony", 2010, 220));
@@ -81,122 +78,80 @@ public class CarGalleryActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        // Initialize views
         colorSpinner = findViewById(R.id.colorSpinner);
-        yearFromSeekBar = findViewById(R.id.yearFromSeekBar);
-        yearToSeekBar = findViewById(R.id.yearToSeekBar);
-        yearRangeTextView = findViewById(R.id.yearRangeTextView);
-        priceFromEditText = findViewById(R.id.priceFromEditText);
-        priceToEditText = findViewById(R.id.priceToEditText);
-        gallery = findViewById(R.id.carGallery);
-        
-        // Set initial text values
-        priceFromEditText.setText(String.valueOf(priceFrom));
-        priceToEditText.setText(String.valueOf(priceTo));
-        yearRangeTextView.setText(yearFrom + " - " + yearTo);
+        yearRangeSlider = findViewById(R.id.yearRangeSlider);
+        yearRangeText = findViewById(R.id.yearRangeText);
+        minPriceInput = findViewById(R.id.minPriceInput);
+        maxPriceInput = findViewById(R.id.maxPriceInput);
+        priceRangeText = findViewById(R.id.priceRangeText);
+        carsRecyclerView = findViewById(R.id.carsRecyclerView);
+
+        carsRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        carAdapter = new CarAdapter(filteredCars);
+        carsRecyclerView.setAdapter(carAdapter);
+
+        minPriceInput.setText(String.valueOf(priceFrom));
+        maxPriceInput.setText(String.valueOf(priceTo));
+        priceRangeText.setText(priceFrom + " - " + priceTo + " PLN");
     }
-    
+
     private void setupFilters() {
-        // Setup Color Spinner
         String[] colors = {"Wszystkie", "Biały", "Czarny", "Czerwony", "Srebrny"};
         ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, colors);
         colorSpinner.setAdapter(colorAdapter);
-        
-        // Filter when color is selected
-        colorSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        colorSpinner.setSelection(0);
+        colorSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
                 filterCars();
-                updateGallery();
             }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
+        yearRangeSlider.setValueFrom(2000);
+        yearRangeSlider.setValueTo(2024);
+        yearRangeSlider.setValues((float) yearFrom, (float) yearTo);
+
+        yearRangeSlider.addOnChangeListener((slider, value, fromUser) -> {
+            yearFrom = Math.round(slider.getValues().get(0));
+            yearTo = Math.round(slider.getValues().get(1));
+            yearRangeText.setText(yearFrom + " - " + yearTo);
+            filterCars();
         });
-        
-        // Setup Year SeekBars
-        yearFromSeekBar.setMax(24); // 2000-2024
-        yearToSeekBar.setMax(24);  // 2000-2024
-        yearToSeekBar.setProgress(24); // Set to 2024
-        
-        yearFromSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                yearFrom = 2000 + progress;
-                if (yearFrom > yearTo) {
-                    yearTo = yearFrom;
-                    yearToSeekBar.setProgress(progress);
+
+        TextWatcher priceWatcher = new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                try {
+                    priceFrom = Integer.parseInt(minPriceInput.getText().toString());
+                } catch (NumberFormatException e) {
+                    priceFrom = 0;
                 }
-                yearRangeTextView.setText(yearFrom + " - " + yearTo);
-                filterCars();
-                updateGallery();
-            }
-            
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-            
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-        
-        yearToSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                yearTo = 2000 + progress;
-                if (yearTo < yearFrom) {
-                    yearFrom = yearTo;
-                    yearFromSeekBar.setProgress(progress);
+                try {
+                    priceTo = Integer.parseInt(maxPriceInput.getText().toString());
+                } catch (NumberFormatException e) {
+                    priceTo = 500;
                 }
-                yearRangeTextView.setText(yearFrom + " - " + yearTo);
+                priceRangeText.setText(priceFrom + " - " + priceTo + " PLN");
                 filterCars();
-                updateGallery();
             }
-            
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-            
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-        
-        // Setup price filter
-        Button applyPriceButton = findViewById(R.id.applyPriceButton);
-        applyPriceButton.setOnClickListener(v -> {
-            try {
-                priceFrom = Integer.parseInt(priceFromEditText.getText().toString());
-                priceTo = Integer.parseInt(priceToEditText.getText().toString());
-                filterCars();
-                updateGallery();
-            } catch (NumberFormatException e) {
-                // Handle invalid input
-            }
-        });
+        };
+        minPriceInput.addTextChangedListener(priceWatcher);
+        maxPriceInput.addTextChangedListener(priceWatcher);
     }
-    
+
     private void filterCars() {
         filteredCars.clear();
-        
         String selectedColor = colorSpinner.getSelectedItem().toString();
-        
         for (Car car : cars) {
             if ((selectedColor.equals("Wszystkie") || car.color.equals(selectedColor)) &&
-                car.year >= yearFrom && car.year <= yearTo &&
-                car.price >= priceFrom && car.price <= priceTo) {
+                    car.year >= yearFrom && car.year <= yearTo &&
+                    car.price >= priceFrom && car.price <= priceTo) {
                 filteredCars.add(car);
             }
         }
-    }
-    
-    private void updateGallery() {
-        gallery.removeAllViews();
-        
-        for (Car car : filteredCars) {
-            ImageView imageView = new ImageView(this);
-            imageView.setLayoutParams(new LinearLayout.LayoutParams(300, 300));
-            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            imageView.setImageResource(car.src);
-            imageView.setContentDescription(car.alt);
-            gallery.addView(imageView);
-        }
+        carAdapter.notifyDataSetChanged();
     }
 }
