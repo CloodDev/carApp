@@ -177,11 +177,65 @@ public class MainActivity extends AppCompatActivity {
             
             // Update car images based on selected brand
             if (brand.equals("Honda")) {
-                carImages = hondaImages;
+            carImages = hondaImages;
             } else if (brand.equals("BMW")) {
-                carImages = bmwImages;
+            carImages = bmwImages;
             } else if (brand.equals("Toyota")) {
-                carImages = toyotaImages;
+            carImages = toyotaImages;
+            }
+            
+            // Filter images based on color if a specific color is selected
+            if (!color.equals("Wszystkie kolory")) {
+            // Create temporary list to hold filtered images
+            java.util.List<Integer> filteredImages = new java.util.ArrayList<>();
+            
+            for (int imageRes : carImages) {
+                String imageName = getResources().getResourceEntryName(imageRes).toLowerCase();
+                
+                // Check if the image name contains the selected color (in Polish)
+                if ((color.equals("Czarny") && imageName.contains("czarn")) ||
+                (color.equals("Biały") && (imageName.contains("bial") || imageName.contains("white"))) ||
+                (color.equals("Czerwony") && imageName.contains("czerwon")) ||
+                (color.equals("Niebieski") && imageName.contains("niebieski")) ||
+                (color.equals("Srebrny") && (imageName.contains("silver") || imageName.contains("srebrn")))) {
+                filteredImages.add(imageRes);
+                }
+            }
+            
+            // Convert filtered list back to array
+            if (!filteredImages.isEmpty()) {
+                int[] filteredArray = new int[filteredImages.size()];
+                for (int i = 0; i < filteredImages.size(); i++) {
+                filteredArray[i] = filteredImages.get(i);
+                }
+                carImages = filteredArray;
+            } else {
+                // No cars found - display a message
+                Toast.makeText(MainActivity.this, "Nie znaleziono samochodów o podanych kryteriach.", Toast.LENGTH_LONG).show();
+                // Hide all thumbnails
+                for (ImageView view : thumbnailViews) {
+                if (view != null) {
+                    view.setVisibility(View.GONE);
+                }
+                }
+                // Show "No cars found" in main image view
+                mainCarImageView.setImageResource(android.R.drawable.ic_menu_help);
+                return; // Exit early
+            }
+            }
+            
+            // Check if there are any cars to display at all
+            if (carImages.length == 0) {
+            Toast.makeText(MainActivity.this, "Nie znaleziono samochodów o podanych kryteriach.", Toast.LENGTH_LONG).show();
+            // Hide all thumbnails
+            for (ImageView view : thumbnailViews) {
+                if (view != null) {
+                view.setVisibility(View.GONE);
+                }
+            }
+            // Show "No cars found" in main image view
+            mainCarImageView.setImageResource(android.R.drawable.ic_menu_help);
+            return; // Exit early
             }
             
             // Refresh images display using the new method
@@ -193,11 +247,11 @@ public class MainActivity extends AppCompatActivity {
             searchParams.append("Rok do: ").append(yearTo).append("\n");
             
             if (!priceFrom.isEmpty()) {
-                searchParams.append("Cena od: ").append(priceFrom).append(" PLN\n");
+            searchParams.append("Cena od: ").append(priceFrom).append(" PLN\n");
             }
             
             if (!priceTo.isEmpty()) {
-                searchParams.append("Cena do: ").append(priceTo).append(" PLN");
+            searchParams.append("Cena do: ").append(priceTo).append(" PLN");
             }
             
             Toast.makeText(MainActivity.this, searchParams.toString(), Toast.LENGTH_LONG).show();
