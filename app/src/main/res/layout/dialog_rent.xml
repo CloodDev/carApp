@@ -1,0 +1,19 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:padding="24dp"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content">
+
+  <TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Enter PESEL number:" />
+
+  <EditText
+    android:id="@+id/peselInput"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:inputType="number"
+    android:maxLength="11"
+    android:hint="PESEL (11 digits)" />
+</LinearLayout>

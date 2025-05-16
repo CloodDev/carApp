@@ -24,4 +24,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center" />
+
+  <Button
+    android:id="@+id/rentButton"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="Rent" />
 </LinearLayout>

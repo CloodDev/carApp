@@ -26,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
         String color;
         int year;
         int price;
+        boolean isRented = false;
+        String rentedByPesel = null;
 
         public Car(int id, int src, String alt, String color, int year, int price) {
             this.id = id;
